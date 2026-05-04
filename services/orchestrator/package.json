@@ -1,0 +1,26 @@
+{
+  "name": "@jobagent/orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
+    "@jobagent/shared": "*",
+    "bullmq": "^5.76.5",
+    "googleapis": "^171.4.0",
+    "ioredis": "^5.10.1",
+    "js-yaml": "^4.1.1",
+    "playwright": "^1.59.1",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/uuid": "^10.0.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@jobagent/shared",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@types/pg": "^8.20.0",
+    "dotenv": "^17.4.2",
+    "ioredis": "^5.10.1",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/ioredis": "^4.28.10"
+  }
+}

@@ -1,0 +1,112 @@
+phases:
+
+  # Phase A: Nightly Discovery (cron-triggered)
+  nightly:
+    trigger: cron
+    schedule: "0 2 * * *"
+    steps:
+      - name: discovery
+        agent: DiscoveryAgent
+        hitl: false
+        config:
+          sources: [greenhouse, lever, ashby, adzuna]
+          lookback_hours: 24
+          max_per_source: 100
+
+      - name: dedup
+        agent: DedupAgent
+        hitl: false
+        config:
+          canonical_key: [company_normalized, role_normalized, location]
+          fuzzy_threshold: 0.92
+
+      - name: authenticity_check
+        agent: AuthenticityVerifier
+        hitl: false
+        config:
+          flag_signals:
+            - missing_company_domain
+            - generic_email_only
+            - upfront_payment_request
+            - copy_paste_listing
+            - new_company_no_history
+
+      - name: matching
+        agent: MatchingAgent
+        hitl: false
+        config:
+          keep_top_n: 15
+          min_score: 0.70
+          weights:
+            role_match: 0.30
+            stack_match: 0.25
+            seniority: 0.15
+            location: 0.15
+            comp: 0.10
+            company_quality: 0.05
+
+      - name: drafting
+        agent: DraftingAgent
+        hitl: false
+        config:
+          generate_cover_letter: true
+          select_resume_variant: true
+          answer_common_screening_questions: true
+          max_drafts_per_run: 10
+
+      - name: digest_build
+        agent: DigestBuilder
+        hitl: false
+
+  # Phase B: Morning Delivery (cron-triggered)
+  morning:
+    trigger: cron
+    schedule: "0 7 * * *"
+    steps:
+      - name: deliver
+        agent: DeliveryAgent
+        hitl: true
+
+  # Phase C: Submission (event-triggered, per draft)
+  submission:
+    trigger: event
+    event: draft_approved
+    steps:
+      - name: prepare
+        agent: SubmissionPrepAgent
+        hitl: false
+
+      - name: submit
+        agent: SubmissionAgent
+        hitl: false
+        config:
+          strategies:
+            greenhouse: api
+            lever: api
+            ashby: api
+            workday: playwright
+            custom: playwright
+            unknown: manual_handoff
+          playwright_timing: human_paced
+          max_retries: 2
+
+      - name: confirm
+        agent: ConfirmationAgent
+        hitl: false
+
+# Persistent Watchers (long-lived, not pipeline steps)
+watchers:
+  inbox:
+    agent: InboxWatcherAgent
+    interval_seconds: 60
+    sources: [gmail_push_api]
+
+  calendar:
+    agent: CalendarSyncAgent
+    triggered_by: inbox.interview_detected
+
+global:
+  max_retries: 3
+  retry_backoff_ms: [5000, 15000, 45000]
+  lock_ttl_ms: 300000
+  approval_timeout_hours: 48
