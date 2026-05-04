@@ -18,6 +18,6 @@
   "references": [
     { "path": "../../packages/shared" }
   ],
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/**/*.json"],
   "exclude": ["node_modules", "dist"]
 }

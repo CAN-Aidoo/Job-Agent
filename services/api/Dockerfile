@@ -6,13 +6,13 @@ COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY services/api/package.json services/api/
 
-RUN npm ci --workspace=packages/shared --workspace=services/api
+RUN npm ci --workspace=packages/shared --workspace=services/api && npm install -D typescript
 
 COPY packages/shared/ packages/shared/
 COPY services/api/ services/api/
 COPY tsconfig.json ./
 
-RUN npx tsc -b services/api/tsconfig.json
+RUN ./node_modules/.bin/tsc -b services/api/tsconfig.json
 
 EXPOSE 3000
 
