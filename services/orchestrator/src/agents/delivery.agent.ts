@@ -1,31 +1,36 @@
-import { JobAgent, AgentInput, AgentOutput } from '@jobagent/shared/src/interfaces/agent';
-import { getPool } from '@jobagent/shared/src/db/client';
+import { AgentInput, AgentOutput, JobAgent } from '@jobagent/shared/src/interfaces/agent';
+import { dbDrafts } from '@jobagent/shared/src/index';
+import { sendDigestEmail } from '../../../api/src/notification/email';
 
 export default class DeliveryAgent implements JobAgent {
   name = 'DeliveryAgent';
 
   async execute(input: AgentInput): Promise<AgentOutput> {
-    const startTime = Date.now();
-    const pool = getPool();
+    const userId = input.userId;
+    const digest = input.previousOutputs.get('DigestBuilderAgent')?.data;
 
-    // Transition all pending_review drafts to awaiting_approval
-    const { rowCount } = await pool.query(
-      `UPDATE application_drafts SET status = 'awaiting_approval'
-       WHERE user_id = $1 AND status = 'pending_review'`,
-      [input.userId]
-    );
+    if (!digest) {
+        throw new Error('No digest found for delivery');
+    }
 
-    // In production, this would trigger email/push notifications
-    // via the notification service. For now, just log it.
-    console.log(`[delivery] Delivered digest to user ${input.userId}: ${rowCount} drafts now awaiting approval`);
+    // Send notification
+    await sendDigestEmail(userId, digest);
+
+    // Update draft status
+    const drafts = await dbDrafts.findPendingForUser(userId);
+    for (const draft of drafts) {
+        if (draft.id) {
+            await dbDrafts.update(draft.id, { status: 'awaiting_approval' });
+        }
+    }
 
     return {
-      data: { delivered_count: rowCount || 0 },
-      metadata: { execution_time_ms: Date.now() - startTime },
+      data: { delivered: true },
+      metadata: { execution_time_ms: 0 },
     };
   }
 
   estimateTime(_input: AgentInput): number {
-    return 5_000;
+    return 5000;
   }
 }

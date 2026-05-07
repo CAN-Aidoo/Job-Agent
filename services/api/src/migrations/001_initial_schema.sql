@@ -136,8 +136,4 @@ CREATE TABLE activity_log (
 CREATE INDEX idx_activity_user ON activity_log(user_id, created_at DESC);
 
 -- Schema migrations tracking
-CREATE TABLE schema_migrations (
-  id              SERIAL PRIMARY KEY,
-  filename        VARCHAR(255) NOT NULL UNIQUE,
-  applied_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- Removed: CREATE TABLE schema_migrations already handled by runner.ts

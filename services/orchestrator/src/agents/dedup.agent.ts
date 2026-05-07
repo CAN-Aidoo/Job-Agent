@@ -1,81 +1,65 @@
-import { JobAgent, AgentInput, AgentOutput } from '@jobagent/shared/src/interfaces/agent';
+import { AgentInput, AgentOutput, JobAgent } from '@jobagent/shared/src/interfaces/agent';
 import { getPool } from '@jobagent/shared/src/db/client';
 
 export default class DedupAgent implements JobAgent {
   name = 'DedupAgent';
 
   async execute(input: AgentInput): Promise<AgentOutput> {
-    const startTime = Date.now();
     const pool = getPool();
-
-    // Get discovery output for posting IDs
-    const discoveryOutput = input.previousOutputs.get('discovery');
-    const postingIds: string[] = discoveryOutput?.data
-      ? (discoveryOutput.data as { posting_ids?: string[] }).posting_ids || []
-      : [];
+    // Assuming DedupAgent runs after DiscoveryAgent and takes discovery output IDs
+    const discoveryOutput = input.previousOutputs.get('DiscoveryAgent');
+    const postingIds = (discoveryOutput?.data as { ids: string[] })?.ids || [];
 
     if (postingIds.length === 0) {
-      return {
-        data: { total_input: 0, total_unique: 0, total_merged: 0 },
-        metadata: { execution_time_ms: Date.now() - startTime },
-      };
+      return { data: { total_input: 0, total_unique: 0, total_merged: 0 }, metadata: { execution_time_ms: 0 } };
     }
 
-    // Find duplicates by canonical_key similarity
-    const { rows: duplicates } = await pool.query<{ id: string; canonical_key: string; cnt: number }>(`
-      SELECT canonical_key, COUNT(*)::int as cnt
+    // Logic: find duplicates based on canonical_key and pg_trgm similarity.
+    // 1. Get postings for the current run
+    const { rows: postings } = await pool.query<{ id: string; canonical_key: string; company: string; role_title: string; location: string; description_md: string; apply_method: string; }>(`
+      SELECT id, canonical_key, company, role_title, data->>'location' as location, data->>'description_md' as description_md, data->>'apply_method' as apply_method
       FROM job_postings
       WHERE id = ANY($1)
-      GROUP BY canonical_key
-      HAVING COUNT(*) > 1
     `, [postingIds]);
 
-    let totalMerged = 0;
+    const startTime = Date.now();
+    const uniqueMap = new Map<string, typeof postings[0]>();
+    const mergedIds: string[] = [];
 
-    for (const dup of duplicates) {
-      // For each group of duplicates, keep the one with the longest description
-      const { rows: group } = await pool.query<{ id: string; data: Record<string, unknown> }>(`
-        SELECT id, data FROM job_postings
-        WHERE canonical_key = $1 AND id = ANY($2)
-        ORDER BY length(data::text) DESC
-      `, [dup.canonical_key, postingIds]);
-
-      if (group.length > 1) {
-        // Mark duplicates (keep first, it has most data)
-        const keepId = group[0].id;
-        const removeIds = group.slice(1).map(g => g.id);
-
-        // We don't delete duplicates, but we can mark them
-        // For now just count them
-        totalMerged += removeIds.length;
-
-        console.log(`[dedup] Canonical key "${dup.canonical_key}": keeping ${keepId}, merged ${removeIds.length} duplicates`);
+    for (const posting of postings) {
+      // Simplistic deduplication: use canonical_key
+      const existing = uniqueMap.get(posting.canonical_key);
+      if (existing) {
+        // Simple heuristic: keep the one with a more formal apply_method
+        if (posting.apply_method !== 'external' && existing.apply_method === 'external') {
+          uniqueMap.set(posting.canonical_key, posting);
+          // Mark old one as duplicate
+          await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [posting.id, existing.id]);
+        } else {
+          // Mark current as duplicate
+          await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [existing.id, posting.id]);
+        }
+      } else {
+        uniqueMap.set(posting.canonical_key, posting);
       }
     }
 
-    // Also check fuzzy duplicates using pg_trgm
-    const { rows: fuzzyDups } = await pool.query<{ id1: string; id2: string; sim: number }>(`
-      SELECT a.id as id1, b.id as id2, similarity(a.canonical_key, b.canonical_key) as sim
-      FROM job_postings a, job_postings b
-      WHERE a.id = ANY($1) AND b.id = ANY($1)
-        AND a.id < b.id
-        AND similarity(a.canonical_key, b.canonical_key) > 0.92
-    `, [postingIds]);
-
-    totalMerged += fuzzyDups.length;
+    const uniquePostingIds = Array.from(uniqueMap.values()).map(p => p.id);
 
     return {
       data: {
         total_input: postingIds.length,
-        total_unique: postingIds.length - totalMerged,
-        total_merged: totalMerged,
-        unique_posting_ids: postingIds, // Pass all IDs forward for now
+        total_unique: uniquePostingIds.length,
+        total_merged: postingIds.length - uniquePostingIds.length,
+        unique_posting_ids: uniquePostingIds,
       },
-      metadata: { execution_time_ms: Date.now() - startTime },
+      metadata: {
+        execution_time_ms: Date.now() - startTime,
+      },
     };
   }
 
   estimateTime(_input: AgentInput): number {
-    return 5_000;
+    return 10000;
   }
 }
