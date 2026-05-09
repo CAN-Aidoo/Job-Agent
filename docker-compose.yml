@@ -51,7 +51,7 @@ services:
     environment:
       DATABASE_URL: postgresql://jobagent:jobagent@postgres:5432/jobagent
       REDIS_URL: redis://redis:6379
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy

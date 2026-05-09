@@ -1,17 +1,20 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { JobAgent, AgentInput, AgentOutput } from '@jobagent/shared/src/interfaces/agent';
 import { getPool } from '@jobagent/shared/src/db/client';
 import { createInterviewEvent } from '../calendar/events';
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514';
+const MODEL = process.env.GOOGLE_AI_MODEL || 'gemini-2.0-flash';
 
 export default class CalendarSyncAgent implements JobAgent {
   name = 'CalendarSyncAgent';
-  private anthropic: Anthropic | null = null;
+  private model: GenerativeModel | null = null;
 
-  private getAnthropic(): Anthropic {
-    if (!this.anthropic) this.anthropic = new Anthropic();
-    return this.anthropic;
+  private getModel(): GenerativeModel {
+    if (!this.model) {
+      const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
+      this.model = genAI.getGenerativeModel({ model: MODEL });
+    }
+    return this.model;
   }
 
   async execute(input: AgentInput): Promise<AgentOutput> {
@@ -78,7 +81,7 @@ export default class CalendarSyncAgent implements JobAgent {
 
   private async generatePrepNotes(company: string, role: string, userId: string): Promise<string> {
     const pool = getPool();
-    const client = this.getAnthropic();
+    const model = this.getModel();
 
     // Get posting info if available
     const { rows: [draftRow] } = await pool.query<{ data: Record<string, unknown> }>(`
@@ -90,12 +93,7 @@ export default class CalendarSyncAgent implements JobAgent {
 
     const jobDescription = draftRow ? ((draftRow.data as Record<string, unknown>).description_md as string || '') : '';
 
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 500,
-      messages: [{
-        role: 'user',
-        content: `Generate interview prep notes for:
+    const result = await model.generateContent(`Generate interview prep notes for:
 Company: ${company}
 Role: ${role}
 Job Description (if available): ${jobDescription.slice(0, 1000)}
@@ -105,14 +103,9 @@ Include:
 2. 5 likely interview questions for this role
 3. 3 talking points from the job description
 
-Be concise.`,
-      }],
-    });
+Be concise.`);
 
-    return response.content
-      .filter(block => block.type === 'text')
-      .map(block => block.type === 'text' ? block.text : '')
-      .join('');
+    return result.response.text();
   }
 
   estimateTime(_input: AgentInput): number {

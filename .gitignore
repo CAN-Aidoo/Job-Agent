@@ -1,6 +1,32 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+
+# Environment variables (secrets)
 .env
+.env.local
+.env.*.local
+
+# Logs
 *.log
-uploads/
+npm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Uploads / user data
+uploads/
+
+# IDE
+.vscode/
+.idea/
+
+# Coverage & testing
+coverage/
+.nyc_output/

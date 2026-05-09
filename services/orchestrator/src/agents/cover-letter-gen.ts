@@ -1,8 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { dbProfiles } from '@jobagent/shared/src/index';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
+const model = genAI.getGenerativeModel({
+  model: process.env.GOOGLE_AI_MODEL || 'gemini-2.0-flash',
 });
 
 export async function generateCoverLetter(draft: any, posting: any): Promise<string> {
@@ -27,11 +28,6 @@ export async function generateCoverLetter(draft: any, posting: any): Promise<str
     Only return the cover letter text, no preamble.
   `;
 
-  const message = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-20240620',
-    max_tokens: 1000,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  return message.content[0].type === 'text' ? message.content[0].text : '';
+  const result = await model.generateContent(prompt);
+  return result.response.text();
 }

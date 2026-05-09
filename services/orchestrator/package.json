@@ -10,7 +10,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.92.0",
+    "@google/generative-ai": "^0.24.0",
     "@jobagent/shared": "*",
     "bullmq": "^5.76.5",
     "googleapis": "^171.4.0",
