@@ -1,6 +1,5 @@
 import { AgentInput, AgentOutput, JobAgent } from '@jobagent/shared/src/interfaces/agent';
-import { dbDrafts } from '@jobagent/shared/src/index';
-import { sendDigestEmail } from '../../../api/src/notification/email';
+import { dbDrafts, sendDigestEmail } from '@jobagent/shared/src/index';
 
 export default class DeliveryAgent implements JobAgent {
   name = 'DeliveryAgent';

@@ -1,5 +1,5 @@
 import { AgentInput, AgentOutput, JobAgent } from '@jobagent/shared/src/interfaces/agent';
-import { dbDrafts } from '@jobagent/shared/src/index';
+import { dbDrafts, dbPostings } from '@jobagent/shared/src/index';
 
 export default class DigestBuilderAgent implements JobAgent {
   name = 'DigestBuilderAgent';
@@ -10,13 +10,17 @@ export default class DigestBuilderAgent implements JobAgent {
     // Get all pending drafts for this user
     const pendingDrafts = await dbDrafts.findPendingForUser(userId);
 
-    const digestItems = pendingDrafts.map(draft => ({
-      draft_id: draft.id,
-      // For now, these are simplified; real implementation would fetch company details
-      company: 'Unknown',
-      role: 'Unknown',
-      match_score: draft.match_score,
-      reason: 'Matches your profile',
+    const digestItems = await Promise.all(pendingDrafts.map(async (draft) => {
+      const posting = await dbPostings.findById(draft.posting_id);
+      
+      return {
+        draft_id: draft.id,
+        company: posting?.company || 'Unknown',
+        role: posting?.role_title || 'Unknown',
+        match_score: draft.match_score,
+        apply_url: posting?.data?.apply_url || '',
+        preview: (draft.cover_letter || '').substring(0, 100) + '...',
+      };
     }));
 
     return {

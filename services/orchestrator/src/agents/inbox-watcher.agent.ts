@@ -1,6 +1,6 @@
 import { AgentInput, AgentOutput, JobAgent } from '@jobagent/shared/src/interfaces/agent';
-import { dbInbox } from '@jobagent/shared/src/index';
-import { getGmailClient } from '../../../api/src/gmail/client';
+import { dbInbox, getGmailClient } from '@jobagent/shared/src/index';
+import { classifyEmail } from './email-classifier';
 
 export default class InboxWatcherAgent implements JobAgent {
   name = 'InboxWatcherAgent';
@@ -22,15 +22,20 @@ export default class InboxWatcherAgent implements JobAgent {
       if (!msg.id) continue;
       
       // 2. Fetch full message
-      const fullMsg = await gmail.users.messages.get({ userId: 'me', id: msg.id });
+      const fullMsg = await gmail.users.messages.get({ userId: 'me', id: msg.id, format: 'full' });
+      const subject = fullMsg.data.payload?.headers?.find(h => h.name === 'Subject')?.value || '';
+      const body = fullMsg.data.snippet || '';
       
-      // 3. Create inbox event record
+      // 3. Classify
+      const classification = await classifyEmail(subject, body);
+      
+      // 4. Create inbox event record
       await dbInbox.create({
         user_id: userId,
         email_id: msg.id,
         received_at: new Date(),
-        raw_subject: fullMsg.data.snippet || '',
-        classified_as: 'noise' // Using 'noise' as a valid InboxClassification instead of 'processing'
+        raw_subject: subject,
+        classified_as: classification
       });
       processedIds.push(msg.id);
     }

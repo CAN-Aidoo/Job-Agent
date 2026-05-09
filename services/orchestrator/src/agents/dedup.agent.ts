@@ -16,35 +16,51 @@ export default class DedupAgent implements JobAgent {
 
     // Logic: find duplicates based on canonical_key and pg_trgm similarity.
     // 1. Get postings for the current run
-    const { rows: postings } = await pool.query<{ id: string; canonical_key: string; company: string; role_title: string; location: string; description_md: string; apply_method: string; }>(`
-      SELECT id, canonical_key, company, role_title, data->>'location' as location, data->>'description_md' as description_md, data->>'apply_method' as apply_method
+    const { rows: postings } = await pool.query<{ 
+        id: string; 
+        canonical_key: string; 
+        apply_method: string; 
+    }>(`
+      SELECT id, canonical_key, data->>'apply_method' as apply_method
       FROM job_postings
       WHERE id = ANY($1)
     `, [postingIds]);
 
     const startTime = Date.now();
     const uniqueMap = new Map<string, typeof postings[0]>();
-    const mergedIds: string[] = [];
 
     for (const posting of postings) {
-      // Simplistic deduplication: use canonical_key
-      const existing = uniqueMap.get(posting.canonical_key);
-      if (existing) {
-        // Simple heuristic: keep the one with a more formal apply_method
-        if (posting.apply_method !== 'external' && existing.apply_method === 'external') {
-          uniqueMap.set(posting.canonical_key, posting);
-          // Mark old one as duplicate
-          await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [posting.id, existing.id]);
+      // Find potential duplicates using similarity on canonical_key
+      const { rows: potentialDuplicates } = await pool.query<{ id: string; apply_method: string }>(`
+        SELECT id, data->>'apply_method' as apply_method
+        FROM job_postings
+        WHERE id != $1 AND similarity(canonical_key, $2) > 0.92
+      `, [posting.id, posting.canonical_key]);
+
+      let isDuplicate = false;
+      for (const dup of potentialDuplicates) {
+        // If we found a duplicate, decide which one to keep
+        // Heuristic: Prefer API-based apply_method over others
+        const currentIsExternal = posting.apply_method === 'external';
+        const dupIsExternal = dup.apply_method === 'external';
+        
+        if (!currentIsExternal && dupIsExternal) {
+            // Keep current, mark existing as duplicate
+            await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [posting.id, dup.id]);
         } else {
-          // Mark current as duplicate
-          await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [existing.id, posting.id]);
+            // Mark current as duplicate
+            await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [dup.id, posting.id]);
+            isDuplicate = true;
+            break;
         }
-      } else {
-        uniqueMap.set(posting.canonical_key, posting);
+      }
+
+      if (!isDuplicate) {
+        uniqueMap.set(posting.id, posting);
       }
     }
 
-    const uniquePostingIds = Array.from(uniqueMap.values()).map(p => p.id);
+    const uniquePostingIds = Array.from(uniqueMap.keys());
 
     return {
       data: {

@@ -55,8 +55,9 @@ export default class CalendarSyncAgent implements JobAgent {
 
       const eventId = await createInterviewEvent(
         input.userId,
-        interview.id
-        // Removed unnecessary arguments that caused the type error
+        `Interview: ${company} — ${role}`,
+        scheduledAt,
+        description
       );
 
       if (eventId) {

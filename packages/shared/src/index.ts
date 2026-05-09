@@ -16,3 +16,9 @@ export * as dbInbox from './db/inbox';
 // Redis
 export * as redisClient from './redis/client';
 export * as redisLock from './redis/lock';
+
+// Notification
+export * from './notification/email';
+
+// Gmail
+export * from './gmail/client';

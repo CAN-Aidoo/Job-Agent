@@ -55,6 +55,7 @@ CREATE TABLE job_postings (
   data            JSONB NOT NULL,
   authenticity    VARCHAR(20),
   authenticity_signals JSONB,
+  canonical_posting_id UUID REFERENCES job_postings(id),
   discovered_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(source, source_id)
 );

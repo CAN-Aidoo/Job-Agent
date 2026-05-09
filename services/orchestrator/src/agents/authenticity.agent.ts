@@ -20,14 +20,26 @@ export default class AuthenticityVerifier implements JobAgent {
       
       const posting = rows[0].data;
       const desc = (posting.description_md as string || '').toLowerCase();
+      const email = (posting.raw?.email as string || '').toLowerCase();
       
       let status: 'verified' | 'suspicious' | 'scam' = 'verified';
       const signals: string[] = [];
 
       // Scam checks
-      if (desc.includes('wire funds') || desc.includes('upfront fee') || desc.includes('send money')) {
+      if (desc.includes('wire funds') || desc.includes('upfront fee') || desc.includes('send money') || desc.includes('ssn')) {
         status = 'scam';
         signals.push('contains_scam_keywords');
+      }
+
+      // Suspicious checks
+      if (!posting.company_domain && (email.includes('gmail.com') || email.includes('yahoo.com') || email.includes('outlook.com'))) {
+        status = 'suspicious';
+        signals.push('generic_email_only');
+      }
+
+      if (posting.comp_range && posting.comp_range.max > 300000 && posting.role_title.toLowerCase().includes('entry')) {
+        status = 'suspicious';
+        signals.push('unrealistic_salary_for_seniority');
       }
 
       // Update status
