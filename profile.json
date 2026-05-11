@@ -1,0 +1,39 @@
+{
+  "user_id": "00000000-0000-0000-0000-000000000001",
+  "full_name": "Clement Nana Aidoo",
+  "email": "aidooclement613@gmail.com",
+  "phone": "+233593503789",
+  "location": {
+    "city": "Accra",
+    "country": "Ghana",
+    "timezone": "UTC 00:00"
+  },
+  "work_authorization": ["US_citizen"],
+  "target_roles": ["Senior Backend Engineer", "Staff Software Engineer"],
+  "excluded_roles": ["Manager", "Product Manager"],
+  "stack": ["TypeScript", "Node.js", "PostgreSQL", "Redis", "Docker"],
+  "seniority": "senior",
+  "comp_band": {
+    "min": 150000,
+    "preferred": 180000,
+    "currency": "USD"
+  },
+  "location_prefs": {
+    "remote": "preferred",
+    "cities": ["Remote", "New York", "San Francisco"],
+    "timezone_overlap_hours": 4
+  },
+  "excluded_companies": ["Apple", "Meta"],
+  "excluded_industries": ["defense", "gambling"],
+  "resume_variants": [
+    {
+      "name": "general-tech",
+      "file_path": "/path/to/resume1.pdf"
+    }
+  ],
+  "cover_letter_voice_sample": "Write a 200-word sample here in your natural writing style that the agent will use as a template for generating cover letters.",
+  "links": {
+    "linkedin": "https://www.linkedin.com/in/clement-aidoo-a7b1b622b",
+    "github": "https://github.com/CAN-Aidoo"
+  }
+}
