@@ -10,6 +10,14 @@
  * - Migrations applied (make migrate)
  */
 
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 import { getPool, closePool } from '@jobagent/shared/src/db/client';
 import { closeRedis } from '@jobagent/shared/src/redis/client';
 import { dbRuns, dbDrafts, dbProfiles } from '@jobagent/shared/src/index';
