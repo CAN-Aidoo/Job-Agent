@@ -93,7 +93,7 @@ router.post('/resume-variants', upload.single('resume'), async (req: AuthRequest
     `INSERT INTO resume_variants (user_id, name, file_path, metadata)
      VALUES ($1, $2, $3, $4)
      RETURNING id, name, file_path`,
-    [userId, name, file.path, JSON.stringify({ originalName: file.originalname, size: file.size })]
+    [userId, name, file.path, JSON.stringify({ originalName: file.originalname, size: file.size })],
   );
 
   res.status(201).json(rows[0]);
@@ -107,7 +107,7 @@ router.delete('/resume-variants/:id', async (req: AuthRequest, res: Response) =>
   const pool = getPool();
   const { rows } = await pool.query<{ file_path: string }>(
     'DELETE FROM resume_variants WHERE id = $1 AND user_id = $2 RETURNING file_path',
-    [id, userId]
+    [id, userId],
   );
 
   if (rows.length === 0) {
@@ -129,10 +129,9 @@ router.delete('/resume-variants/:id', async (req: AuthRequest, res: Response) =>
 router.get('/resume-variants', async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const pool = getPool();
-  const { rows } = await pool.query(
-    'SELECT id, name, file_path, metadata FROM resume_variants WHERE user_id = $1',
-    [userId]
-  );
+  const { rows } = await pool.query('SELECT id, name, file_path, metadata FROM resume_variants WHERE user_id = $1', [
+    userId,
+  ]);
   res.json(rows);
 });
 

@@ -17,10 +17,7 @@ export async function generateProfileEmbedding(profile: Profile): Promise<number
   return embedding;
 }
 
-export async function generatePostingEmbedding(
-  title: string,
-  description: string
-): Promise<number[]> {
+export async function generatePostingEmbedding(_title: string, _description: string): Promise<number[]> {
   // MOCK: Generate a random 1536-dimension vector
   return Array.from({ length: 1536 }, () => Math.random());
 }

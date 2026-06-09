@@ -1,9 +1,4 @@
-export type ApplyMethod =
-  | 'greenhouse_api'
-  | 'lever_api'
-  | 'ashby_api'
-  | 'workday_form'
-  | 'external';
+export type ApplyMethod = 'greenhouse_api' | 'lever_api' | 'ashby_api' | 'workday_form' | 'external';
 
 export type RemoteType = 'fully' | 'hybrid' | 'onsite' | 'unknown';
 
@@ -76,15 +71,15 @@ export interface ApplicationDraft {
   user_id: string;
   posting_id: string;
   match_score: number;
-  match_breakdown: MatchBreakdown;
-  resume_variant_id?: string;
-  cover_letter?: string;
-  screening_answers?: ScreeningAnswer[];
+  match_breakdown: MatchBreakdown | null;
+  resume_variant_id?: string | null;
+  cover_letter?: string | null;
+  screening_answers?: ScreeningAnswer[] | null;
   status: DraftStatus;
-  user_feedback?: string;
-  approved_at?: Date;
-  submitted_at?: Date;
-  submission_receipt?: Record<string, unknown>;
+  user_feedback?: string | null;
+  approved_at?: Date | null;
+  submitted_at?: Date | null;
+  submission_receipt?: Record<string, unknown> | null;
   created_at?: Date;
 }
 

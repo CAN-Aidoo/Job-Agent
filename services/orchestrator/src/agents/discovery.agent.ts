@@ -1,6 +1,7 @@
 import { AgentInput, AgentOutput, JobAgent } from '@jobagent/shared/src/interfaces/agent';
 import { dbProfiles, dbPostings } from '@jobagent/shared/src/index';
 import { JobSource } from '@jobagent/shared/src/interfaces/source';
+import { JobPosting } from '@jobagent/shared/src/interfaces/job';
 import { sourceRegistry } from '../sources/registry';
 
 // Export registerSource for index.ts
@@ -20,18 +21,16 @@ export default class DiscoveryAgent implements JobAgent {
     const lookbackHours = (input.config.lookbackHours as number) || 24;
     const max = (input.config.max as number) || 100;
 
-    const results = await Promise.allSettled(
-      sources.map(source => source.fetchJobs(profile, lookbackHours, max))
-    );
+    const results = await Promise.allSettled(sources.map((source) => source.fetchJobs(profile, lookbackHours, max)));
 
-    const allNormalized: any[] = [];
+    const allNormalized: JobPosting[] = [];
     const summary: Record<string, number> = {};
 
     results.forEach((res, index) => {
       const source = sources[index];
       if (res.status === 'fulfilled') {
         summary[source.name] = res.value.length;
-        res.value.forEach(raw => {
+        res.value.forEach((raw) => {
           try {
             allNormalized.push(source.normalizePosting(raw));
           } catch (e) {

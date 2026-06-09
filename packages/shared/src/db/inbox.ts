@@ -29,17 +29,14 @@ export async function create(event: Omit<InboxEvent, 'id' | 'created_at'>): Prom
       event.raw_subject || null,
       event.raw_from || null,
       event.received_at,
-    ]
+    ],
   );
   return rows[0];
 }
 
 export async function findByEmailId(emailId: string): Promise<InboxEventRow | null> {
   const pool = getPool();
-  const { rows } = await pool.query<InboxEventRow>(
-    'SELECT * FROM inbox_events WHERE email_id = $1',
-    [emailId]
-  );
+  const { rows } = await pool.query<InboxEventRow>('SELECT * FROM inbox_events WHERE email_id = $1', [emailId]);
   return rows[0] || null;
 }
 
@@ -47,13 +44,13 @@ export async function updateClassification(
   id: string,
   classifiedAs: InboxClassification,
   parsedData: Record<string, unknown>,
-  relatedDraftId?: string
+  relatedDraftId?: string,
 ): Promise<InboxEventRow | null> {
   const pool = getPool();
   const { rows } = await pool.query<InboxEventRow>(
     `UPDATE inbox_events SET classified_as = $1, parsed_data = $2, related_draft_id = $3
      WHERE id = $4 RETURNING *`,
-    [classifiedAs, JSON.stringify(parsedData), relatedDraftId || null, id]
+    [classifiedAs, JSON.stringify(parsedData), relatedDraftId || null, id],
   );
   return rows[0] || null;
 }

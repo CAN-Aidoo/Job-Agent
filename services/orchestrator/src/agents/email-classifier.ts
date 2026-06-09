@@ -5,7 +5,12 @@ const model = genAI.getGenerativeModel({
   model: process.env.GOOGLE_AI_MODEL || 'gemini-2.0-flash',
 });
 
-export type EmailClassification = 'interview_invite' | 'rejection' | 'recruiter_outreach' | 'screening_required' | 'noise';
+export type EmailClassification =
+  | 'interview_invite'
+  | 'rejection'
+  | 'recruiter_outreach'
+  | 'screening_required'
+  | 'noise';
 
 export async function classifyEmail(subject: string, body: string): Promise<EmailClassification> {
   const prompt = `

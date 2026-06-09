@@ -115,11 +115,7 @@ export async function processRunToCompletion(runId: string): Promise<void> {
     const run = await dbRuns.findById(runId);
     if (!run) return;
 
-    if (
-      run.state === RunState.COMPLETED ||
-      run.state === RunState.AWAITING_APPROVAL ||
-      run.state === RunState.FAILED
-    ) {
+    if (run.state === RunState.COMPLETED || run.state === RunState.AWAITING_APPROVAL || run.state === RunState.FAILED) {
       return;
     }
 

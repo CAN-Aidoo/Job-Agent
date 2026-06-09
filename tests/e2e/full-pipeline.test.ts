@@ -11,10 +11,10 @@
  */
 
 import { getPool, closePool } from '@jobagent/shared/src/db/client';
-import { getRedis, closeRedis } from '@jobagent/shared/src/redis/client';
+import { closeRedis } from '@jobagent/shared/src/redis/client';
 import { dbRuns, dbDrafts, dbProfiles } from '@jobagent/shared/src/index';
 import { RunPhase, RunState } from '@jobagent/shared/src/interfaces/run';
-import { Profile } from '@jobagent/shared/src/interfaces/profile';
+import type { Profile } from '@jobagent/shared/src/interfaces/profile';
 
 const TEST_USER_EMAIL = 'test@jobagent.dev';
 const TEST_PASSWORD_HASH = '$2a$12$test'; // Not used for auth in tests
@@ -23,11 +23,13 @@ async function setup(): Promise<string> {
   const pool = getPool();
 
   // Create test user
-  const { rows: [user] } = await pool.query<{ id: string }>(
+  const {
+    rows: [user],
+  } = await pool.query<{ id: string }>(
     `INSERT INTO users (email, password_hash) VALUES ($1, $2)
      ON CONFLICT (email) DO UPDATE SET last_active_at = now()
      RETURNING id`,
-    [TEST_USER_EMAIL, TEST_PASSWORD_HASH]
+    [TEST_USER_EMAIL, TEST_PASSWORD_HASH],
   );
 
   // Create test profile
@@ -47,7 +49,8 @@ async function setup(): Promise<string> {
     excluded_companies: ['EvilCorp'],
     excluded_industries: ['gambling'],
     resume_variants: [],
-    cover_letter_voice_sample: 'I build reliable distributed systems. My approach combines pragmatic engineering with clear communication.',
+    cover_letter_voice_sample:
+      'I build reliable distributed systems. My approach combines pragmatic engineering with clear communication.',
     links: { github: 'https://github.com/testuser', linkedin: 'https://linkedin.com/in/testuser' },
   };
 
@@ -80,19 +83,31 @@ async function testApprovalFlow(userId: string): Promise<void> {
   const pool = getPool();
 
   // Insert a fake posting for testing approval
-  const { rows: [posting] } = await pool.query<{ id: string }>(`
+  const {
+    rows: [posting],
+  } = await pool.query<{ id: string }>(
+    `
     INSERT INTO job_postings (source, source_id, canonical_key, company, role_title, data)
     VALUES ('test', 'test-001', 'testco|engineer|sf', 'TestCo', 'Senior Engineer', $1)
     ON CONFLICT (source, source_id) DO UPDATE SET data = $1
     RETURNING id
-  `, [JSON.stringify({ description_md: 'Test job', apply_url: 'https://test.com', apply_method: 'external' })]);
+  `,
+    [JSON.stringify({ description_md: 'Test job', apply_url: 'https://test.com', apply_method: 'external' })],
+  );
 
   // Create a draft
   const draft = await dbDrafts.create({
     user_id: userId,
     posting_id: posting.id,
     match_score: 0.85,
-    match_breakdown: { role_match: 0.9, stack_match: 0.8, seniority: 1.0, location: 0.7, comp: 0.8, company_quality: 1.0 },
+    match_breakdown: {
+      role_match: 0.9,
+      stack_match: 0.8,
+      seniority: 1.0,
+      location: 0.7,
+      comp: 0.8,
+      company_quality: 1.0,
+    },
     status: 'awaiting_approval',
     cover_letter: 'Test cover letter for integration testing.',
     screening_answers: [{ question: 'Work auth', answer: 'US citizen', needs_review: false }],
@@ -108,7 +123,14 @@ async function testApprovalFlow(userId: string): Promise<void> {
     user_id: userId,
     posting_id: posting.id,
     match_score: 0.72,
-    match_breakdown: { role_match: 0.7, stack_match: 0.7, seniority: 0.5, location: 0.8, comp: 0.7, company_quality: 1.0 },
+    match_breakdown: {
+      role_match: 0.7,
+      stack_match: 0.7,
+      seniority: 0.5,
+      location: 0.8,
+      comp: 0.7,
+      company_quality: 1.0,
+    },
     status: 'awaiting_approval',
   });
 
@@ -123,13 +145,26 @@ function assert(condition: boolean, message: string): void {
 
 async function cleanup(): Promise<void> {
   const pool = getPool();
-  await pool.query('DELETE FROM activity_log WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [TEST_USER_EMAIL]);
-  await pool.query('DELETE FROM calendar_events WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [TEST_USER_EMAIL]);
-  await pool.query('DELETE FROM inbox_events WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [TEST_USER_EMAIL]);
-  await pool.query('DELETE FROM application_drafts WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [TEST_USER_EMAIL]);
-  await pool.query('DELETE FROM step_outputs WHERE run_id IN (SELECT id FROM runs WHERE user_id IN (SELECT id FROM users WHERE email = $1))', [TEST_USER_EMAIL]);
+  await pool.query('DELETE FROM activity_log WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [
+    TEST_USER_EMAIL,
+  ]);
+  await pool.query('DELETE FROM calendar_events WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [
+    TEST_USER_EMAIL,
+  ]);
+  await pool.query('DELETE FROM inbox_events WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [
+    TEST_USER_EMAIL,
+  ]);
+  await pool.query('DELETE FROM application_drafts WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [
+    TEST_USER_EMAIL,
+  ]);
+  await pool.query(
+    'DELETE FROM step_outputs WHERE run_id IN (SELECT id FROM runs WHERE user_id IN (SELECT id FROM users WHERE email = $1))',
+    [TEST_USER_EMAIL],
+  );
   await pool.query('DELETE FROM runs WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [TEST_USER_EMAIL]);
-  await pool.query('DELETE FROM resume_variants WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [TEST_USER_EMAIL]);
+  await pool.query('DELETE FROM resume_variants WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [
+    TEST_USER_EMAIL,
+  ]);
   await pool.query('DELETE FROM profiles WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [TEST_USER_EMAIL]);
   await pool.query("DELETE FROM job_postings WHERE source = 'test'");
 }

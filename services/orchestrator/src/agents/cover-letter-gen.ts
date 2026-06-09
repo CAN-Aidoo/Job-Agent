@@ -1,12 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { dbProfiles } from '@jobagent/shared/src/index';
+import { ApplicationDraft, JobPosting } from '@jobagent/shared/src/interfaces/job';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
 const model = genAI.getGenerativeModel({
   model: process.env.GOOGLE_AI_MODEL || 'gemini-2.0-flash',
 });
 
-export async function generateCoverLetter(draft: any, posting: any): Promise<string> {
+export async function generateCoverLetter(draft: ApplicationDraft, posting: JobPosting): Promise<string> {
   const profileRow = await dbProfiles.findByUserId(draft.user_id);
   const profile = profileRow?.data;
 

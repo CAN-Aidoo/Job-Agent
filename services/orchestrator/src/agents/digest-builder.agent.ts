@@ -6,22 +6,24 @@ export default class DigestBuilderAgent implements JobAgent {
 
   async execute(input: AgentInput): Promise<AgentOutput> {
     const userId = input.userId;
-    
+
     // Get all pending drafts for this user
     const pendingDrafts = await dbDrafts.findPendingForUser(userId);
 
-    const digestItems = await Promise.all(pendingDrafts.map(async (draft) => {
-      const posting = await dbPostings.findById(draft.posting_id);
-      
-      return {
-        draft_id: draft.id,
-        company: posting?.company || 'Unknown',
-        role: posting?.role_title || 'Unknown',
-        match_score: draft.match_score,
-        apply_url: posting?.data?.apply_url || '',
-        preview: (draft.cover_letter || '').substring(0, 100) + '...',
-      };
-    }));
+    const digestItems = await Promise.all(
+      pendingDrafts.map(async (draft) => {
+        const posting = await dbPostings.findById(draft.posting_id);
+
+        return {
+          draft_id: draft.id,
+          company: posting?.company || 'Unknown',
+          role: posting?.role_title || 'Unknown',
+          match_score: draft.match_score,
+          apply_url: posting?.data?.apply_url || '',
+          preview: (draft.cover_letter || '').substring(0, 100) + '...',
+        };
+      }),
+    );
 
     return {
       data: { digest: digestItems },

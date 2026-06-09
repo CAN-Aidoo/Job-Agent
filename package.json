@@ -2,6 +2,7 @@
   "name": "jobagent",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "workspaces": [
     "packages/shared",
     "services/api",
@@ -10,10 +11,20 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "clean": "rm -rf packages/*/dist services/*/dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "postlint": "prettier --write ."
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^8.60.1",
+    "@typescript-eslint/parser": "^8.60.1",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "prettier": "^3.8.3",
     "typescript": "^5.4.0",
-    "@types/node": "^20.11.0"
+    "typescript-eslint": "^8.60.1"
   }
 }

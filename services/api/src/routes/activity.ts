@@ -11,7 +11,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const { rows } = await pool.query(
     `SELECT * FROM activity_log WHERE user_id = $1
      ORDER BY created_at DESC LIMIT 50`,
-    [req.user!.userId]
+    [req.user!.userId],
   );
   res.json(rows);
 });
@@ -22,7 +22,7 @@ router.get('/drafts/:id', async (req: AuthRequest, res: Response) => {
   const { rows } = await pool.query(
     `SELECT * FROM activity_log WHERE user_id = $1 AND draft_id = $2
      ORDER BY created_at DESC`,
-    [req.user!.userId, req.params.id]
+    [req.user!.userId, req.params.id],
   );
   res.json(rows);
 });

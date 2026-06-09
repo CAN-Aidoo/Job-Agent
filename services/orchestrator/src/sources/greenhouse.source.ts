@@ -6,7 +6,7 @@ import companies from './greenhouse-companies.json';
 const DELAY_MS = 200;
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export default class GreenhouseSource implements JobSource {
@@ -24,7 +24,7 @@ export default class GreenhouseSource implements JobSource {
         const response = await fetch(url);
         if (!response.ok) continue;
 
-        const data = await response.json() as { jobs: RawPosting[] };
+        const data = (await response.json()) as { jobs: RawPosting[] };
         if (data.jobs) {
           for (const job of data.jobs) {
             (job as Record<string, unknown>)._company_slug = company;
@@ -40,17 +40,17 @@ export default class GreenhouseSource implements JobSource {
     }
 
     // Filter by profile target roles (basic keyword match)
-    const keywords = profile.target_roles.map(r => r.toLowerCase());
-    return allJobs.filter(job => {
-      const title = ((job as Record<string, unknown>).title as string || '').toLowerCase();
-      return keywords.some(k => title.includes(k.split(' ').pop()!));
+    const keywords = profile.target_roles.map((r) => r.toLowerCase());
+    return allJobs.filter((job) => {
+      const title = (((job as Record<string, unknown>).title as string) || '').toLowerCase();
+      return keywords.some((k) => title.includes(k.split(' ').pop()!));
     });
   }
 
   normalizePosting(raw: RawPosting): JobPosting {
     const r = raw as Record<string, unknown>;
     const location = r.location as { name?: string } | undefined;
-    const companySlug = r._company_slug as string || '';
+    const companySlug = (r._company_slug as string) || '';
 
     return {
       source: 'greenhouse',
@@ -77,6 +77,9 @@ export default class GreenhouseSource implements JobSource {
   }
 
   private htmlToText(html: string): string {
-    return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return html
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 }

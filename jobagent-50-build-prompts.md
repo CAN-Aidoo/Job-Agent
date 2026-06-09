@@ -37,7 +37,7 @@ PHASE 2 — AGENT REGISTRY + PIPELINE ENGINE (Prompts 9–13)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 9. Agent Interface and Registry
-   In services/orchestrator, create agents/registry.ts. The AgentRegistry class has a private Map<string, JobAgent>. register(agent) adds an agent, throwing on duplicate names. get(name) returns the agent or undefined. listAll() returns an array of all registered agent names. Create agents/loader.ts that auto-scans the agents/ directory for files matching *.agent.ts, imports each, instantiates the default export, and calls registry.register(). Log each registered agent name on startup. Create a placeholder agent (agents/noop.agent.ts) that implements the JobAgent interface with name "NoopAgent", does nothing in execute(), and returns an empty output. Register it and confirm the loader picks it up automatically without any explicit import in loader.ts.
+   In services/orchestrator, create agents/registry.ts. The AgentRegistry class has a private Map<string, JobAgent>. register(agent) adds an agent, throwing on duplicate names. get(name) returns the agent or undefined. listAll() returns an array of all registered agent names. Create agents/loader.ts that auto-scans the agents/ directory for files matching \*.agent.ts, imports each, instantiates the default export, and calls registry.register(). Log each registered agent name on startup. Create a placeholder agent (agents/noop.agent.ts) that implements the JobAgent interface with name "NoopAgent", does nothing in execute(), and returns an empty output. Register it and confirm the loader picks it up automatically without any explicit import in loader.ts.
 
 10. Pipeline Config Loader
     Create pipeline/config.ts in services/orchestrator. Define TypeScript interfaces: PipelinePhase (name, trigger, schedule, steps array), PipelineStep (name, agent, hitl, config), PipelineConfig (phases object keyed by phase name, global settings). Write loadPipelineConfig(path) that reads pipeline.yaml using the js-yaml package and parses it into PipelineConfig. After parsing, validate that every agent name referenced in every step exists in the AgentRegistry — throw a descriptive error listing missing agents if not. Export the loaded and validated config as a singleton. Create pipeline.yaml in services/orchestrator based exactly on the pipeline configuration from jobagent-orchestrator-architecture.md with all three phases: nightly, morning, and submission.
@@ -194,16 +194,16 @@ PHASE 9 — STUCK RECOVERY + OBSERVABILITY + POLISH (Prompts 48–50)
 
 ## Build Phases Summary
 
-| Phase | Prompts | Output | Working Milestone |
-|---|---|---|---|
-| Scaffold + DB | 1–8 | All tables, auth, profile API | Database and auth working |
-| Agent Engine | 9–13 | Registry, pipeline, orchestrator | Orchestrator loop working |
-| Discovery | 14–20 | 4 sources, dedup, verifier | Daily job discovery running |
-| Matching | 21–24 | Scoring engine, exclusions | Top-N match list per run |
-| Drafting | 25–30 | Cover letters, screening answers | Full draft per matched job |
-| HITL + Digest | 31–37 | Email digest, approvals, UI | ← Ship v1 here (~8 weeks) |
-| Submission | 38–42 | API + Playwright submitters | Applications going out |
-| Inbox + Calendar | 43–47 | Email classifier, calendar events | Full loop closed |
-| Hardening | 48–50 | Watchdog, analytics, Docker | Production-ready |
+| Phase            | Prompts | Output                            | Working Milestone           |
+| ---------------- | ------- | --------------------------------- | --------------------------- |
+| Scaffold + DB    | 1–8     | All tables, auth, profile API     | Database and auth working   |
+| Agent Engine     | 9–13    | Registry, pipeline, orchestrator  | Orchestrator loop working   |
+| Discovery        | 14–20   | 4 sources, dedup, verifier        | Daily job discovery running |
+| Matching         | 21–24   | Scoring engine, exclusions        | Top-N match list per run    |
+| Drafting         | 25–30   | Cover letters, screening answers  | Full draft per matched job  |
+| HITL + Digest    | 31–37   | Email digest, approvals, UI       | ← Ship v1 here (~8 weeks)   |
+| Submission       | 38–42   | API + Playwright submitters       | Applications going out      |
+| Inbox + Calendar | 43–47   | Email classifier, calendar events | Full loop closed            |
+| Hardening        | 48–50   | Watchdog, analytics, Docker       | Production-ready            |
 
 Implement each prompt one at a time. Do not skip or combine prompts. Ensure TypeScript compiles cleanly after each. Run the relevant test before marking a prompt complete.

@@ -18,10 +18,6 @@
       "@jobagent/shared/*": ["./packages/shared/src/*"]
     }
   },
-  "include": [
-    "packages/shared/src/**/*",
-    "services/api/src/**/*",
-    "services/orchestrator/src/**/*"
-  ],
+  "include": ["packages/shared/src/**/*", "services/api/src/**/*", "services/orchestrator/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

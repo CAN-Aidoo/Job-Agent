@@ -1,3 +1,6 @@
+import { ApplicationDraft, JobPosting } from '@jobagent/shared/src/interfaces/job';
+import { Profile } from '@jobagent/shared/src/interfaces/profile';
+
 export interface SubmissionResult {
   success: boolean;
   receipt?: Record<string, unknown>;
@@ -5,5 +8,5 @@ export interface SubmissionResult {
 }
 
 export interface SubmissionStrategy {
-  execute(draft: any, posting: any, profile: any): Promise<SubmissionResult>;
+  execute(draft: ApplicationDraft, posting: JobPosting, profile: Profile): Promise<SubmissionResult>;
 }

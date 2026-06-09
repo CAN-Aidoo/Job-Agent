@@ -9,7 +9,7 @@ export default class DeliveryAgent implements JobAgent {
     const digest = input.previousOutputs.get('DigestBuilderAgent')?.data;
 
     if (!digest) {
-        throw new Error('No digest found for delivery');
+      throw new Error('No digest found for delivery');
     }
 
     // Send notification
@@ -18,9 +18,9 @@ export default class DeliveryAgent implements JobAgent {
     // Update draft status
     const drafts = await dbDrafts.findPendingForUser(userId);
     for (const draft of drafts) {
-        if (draft.id) {
-            await dbDrafts.update(draft.id, { status: 'awaiting_approval' });
-        }
+      if (draft.id) {
+        await dbDrafts.update(draft.id, { status: 'awaiting_approval' });
+      }
     }
 
     return {

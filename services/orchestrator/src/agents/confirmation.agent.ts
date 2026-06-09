@@ -31,7 +31,7 @@ export default class ConfirmationAgent implements JobAgent {
     if (draftId) {
       await pool.query(
         `INSERT INTO activity_log (user_id, draft_id, event_type, details) VALUES ($1, $2, 'submission_confirmed', $3)`,
-        [input.userId, draftId, JSON.stringify(submissionData.receipt)]
+        [input.userId, draftId, JSON.stringify(submissionData.receipt)],
       );
     }
 

@@ -31,7 +31,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
   const { rows } = await pool.query<{ id: string }>(
     'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id',
-    [email, passwordHash]
+    [email, passwordHash],
   );
 
   const token = generateToken(rows[0].id);
@@ -56,7 +56,7 @@ router.post('/login', async (req: Request, res: Response) => {
   const pool = getPool();
   const { rows } = await pool.query<{ id: string; password_hash: string }>(
     'SELECT id, password_hash FROM users WHERE email = $1',
-    [email]
+    [email],
   );
 
   if (rows.length === 0) {

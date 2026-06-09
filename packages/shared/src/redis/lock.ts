@@ -12,11 +12,7 @@ end
  * Acquire a distributed lock using Redis SET NX PX.
  * Returns the lock token (instanceId) on success, or null if already held.
  */
-export async function acquireLock(
-  key: string,
-  ttlMs: number,
-  instanceId: string
-): Promise<string | null> {
+export async function acquireLock(key: string, ttlMs: number, instanceId: string): Promise<string | null> {
   const redis = getRedis();
   const result = await redis.set(key, instanceId, 'PX', ttlMs, 'NX');
   return result === 'OK' ? instanceId : null;

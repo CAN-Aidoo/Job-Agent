@@ -36,10 +36,14 @@ export default class MatchingAgent implements JobAgent {
     const config = input.config as unknown as MatchConfig;
 
     const keepTopN = config.keep_top_n || 15;
-    const minScore = config.min_score || 0.70;
+    const minScore = config.min_score || 0.7;
     const weights = config.weights || {
-      role_match: 0.30, stack_match: 0.25, seniority: 0.15,
-      location: 0.15, comp: 0.10, company_quality: 0.05,
+      role_match: 0.3,
+      stack_match: 0.25,
+      seniority: 0.15,
+      location: 0.15,
+      comp: 0.1,
+      company_quality: 0.05,
     };
 
     // Load profile
@@ -53,7 +57,6 @@ export default class MatchingAgent implements JobAgent {
     const profile = profileRow.data;
 
     // Get verified/suspicious postings from this run
-    const authenticityOutput = input.previousOutputs.get('authenticity_check');
     const dedupOutput = input.previousOutputs.get('dedup');
     const postingIds: string[] = dedupOutput?.data
       ? (dedupOutput.data as { unique_posting_ids?: string[] }).unique_posting_ids || []
@@ -68,11 +71,15 @@ export default class MatchingAgent implements JobAgent {
 
     // Fetch postings (exclude scams)
     const { rows: postings } = await pool.query<{
-      id: string; company: string; role_title: string; data: Record<string, unknown>;
+      id: string;
+      company: string;
+      role_title: string;
+      data: Record<string, unknown>;
       authenticity: string | null;
-    }>(`SELECT id, company, role_title, data, authenticity FROM job_postings
+    }>(
+      `SELECT id, company, role_title, data, authenticity FROM job_postings
         WHERE id = ANY($1) AND (authenticity IS NULL OR authenticity != 'scam')`,
-      [postingIds]
+      [postingIds],
     );
 
     // Score each posting
@@ -92,7 +99,7 @@ export default class MatchingAgent implements JobAgent {
       const breakdown = this.scorePosting(posting, jobData, profile, weights);
       const score = Object.entries(weights).reduce(
         (sum, [key, weight]) => sum + (breakdown[key as keyof MatchBreakdown] || 0) * weight,
-        0
+        0,
       );
 
       if (score >= minScore) {
@@ -142,11 +149,7 @@ export default class MatchingAgent implements JobAgent {
     };
   }
 
-  private checkExclusions(
-    company: string,
-    _jobData: Record<string, unknown>,
-    profile: Profile
-  ): string | null {
+  private checkExclusions(company: string, _jobData: Record<string, unknown>, profile: Profile): string | null {
     const normalizedCompany = company.toLowerCase().trim();
 
     // Excluded companies
@@ -163,7 +166,7 @@ export default class MatchingAgent implements JobAgent {
     posting: { company: string; role_title: string },
     jobData: Record<string, unknown>,
     profile: Profile,
-    _weights: MatchConfig['weights']
+    _weights: MatchConfig['weights'],
   ): MatchBreakdown {
     const description = ((jobData.description_md as string) || '').toLowerCase();
     const roleTitle = posting.role_title.toLowerCase();
@@ -200,7 +203,7 @@ export default class MatchingAgent implements JobAgent {
     let bestMatch = 0;
     for (const target of targetRoles) {
       const targetWords = target.toLowerCase().split(/\s+/);
-      const matchedWords = targetWords.filter(w => roleTitle.includes(w));
+      const matchedWords = targetWords.filter((w) => roleTitle.includes(w));
       const score = matchedWords.length / targetWords.length;
       bestMatch = Math.max(bestMatch, score);
     }
@@ -209,7 +212,7 @@ export default class MatchingAgent implements JobAgent {
 
   private computeStackMatch(description: string, stack: string[]): number {
     if (stack.length === 0) return 0.5;
-    const matched = stack.filter(s => description.includes(s.toLowerCase()));
+    const matched = stack.filter((s) => description.includes(s.toLowerCase()));
     return matched.length / stack.length;
   }
 

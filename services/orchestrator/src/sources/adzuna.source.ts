@@ -38,7 +38,7 @@ export default class AdzunaSource implements JobSource {
         const response = await fetch(url);
         if (!response.ok) break;
 
-        const data = await response.json() as { results?: RawPosting[] };
+        const data = (await response.json()) as { results?: RawPosting[] };
         if (!data.results || data.results.length === 0) break;
 
         allResults.push(...data.results);
@@ -65,7 +65,7 @@ export default class AdzunaSource implements JobSource {
       company_domain: null,
       role_title: (r.title as string) || 'Unknown',
       location,
-      remote: this.detectRemote((r.title as string || '') + ' ' + location),
+      remote: this.detectRemote(((r.title as string) || '') + ' ' + location),
       posted_at: new Date((r.created as string) || Date.now()),
       apply_url: redirectUrl,
       apply_method: this.detectApplyMethod(redirectUrl),

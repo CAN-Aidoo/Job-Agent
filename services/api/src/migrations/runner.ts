@@ -21,15 +21,14 @@ async function runMigrations(): Promise<void> {
     `);
 
     // Get already applied migrations
-    const { rows: applied } = await pool.query(
-      'SELECT filename FROM schema_migrations ORDER BY id'
-    );
+    const { rows: applied } = await pool.query('SELECT filename FROM schema_migrations ORDER BY id');
     const appliedSet = new Set(applied.map((r: { filename: string }) => r.filename));
 
     // Find migration files
     const migrationsDir = path.resolve(__dirname);
-    const files = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
+    const files = fs
+      .readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
       .sort();
 
     let migrationsRan = 0;
@@ -46,10 +45,7 @@ async function runMigrations(): Promise<void> {
       await pool.query('BEGIN');
       try {
         await pool.query(sql);
-        await pool.query(
-          'INSERT INTO schema_migrations (filename) VALUES ($1)',
-          [file]
-        );
+        await pool.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [file]);
         await pool.query('COMMIT');
         migrationsRan++;
         console.log(`  [done] ${file}`);

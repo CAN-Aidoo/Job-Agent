@@ -16,25 +16,21 @@ interface PostingRow {
 
 export async function findByCanonicalKey(key: string): Promise<PostingRow[]> {
   const pool = getPool();
-  const { rows } = await pool.query<PostingRow>(
-    'SELECT * FROM job_postings WHERE canonical_key = $1',
-    [key]
-  );
+  const { rows } = await pool.query<PostingRow>('SELECT * FROM job_postings WHERE canonical_key = $1', [key]);
   return rows;
 }
 
 export async function findById(id: string): Promise<PostingRow | null> {
   const pool = getPool();
-  const { rows } = await pool.query<PostingRow>(
-    'SELECT * FROM job_postings WHERE id = $1',
-    [id]
-  );
+  const { rows } = await pool.query<PostingRow>('SELECT * FROM job_postings WHERE id = $1', [id]);
   return rows[0] || null;
 }
 
 export async function upsert(posting: JobPosting): Promise<string> {
   const pool = getPool();
-  const canonicalKey = posting.canonical_key || `${posting.company.toLowerCase()}|${posting.role_title.toLowerCase()}|${posting.location.toLowerCase()}`;
+  const canonicalKey =
+    posting.canonical_key ||
+    `${posting.company.toLowerCase()}|${posting.role_title.toLowerCase()}|${posting.location.toLowerCase()}`;
   const { rows } = await pool.query<{ id: string }>(
     `INSERT INTO job_postings (source, source_id, canonical_key, company, role_title, data, authenticity, authenticity_signals, discovered_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, now()))
@@ -52,7 +48,7 @@ export async function upsert(posting: JobPosting): Promise<string> {
       posting.authenticity || null,
       posting.authenticity_signals ? JSON.stringify(posting.authenticity_signals) : null,
       posting.discovered_at || null,
-    ]
+    ],
   );
   return rows[0].id;
 }

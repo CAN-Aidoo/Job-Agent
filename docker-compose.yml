@@ -8,11 +8,11 @@ services:
       POSTGRES_PASSWORD: jobagent
       POSTGRES_DB: jobagent
     ports:
-      - "5433:5432"
+      - '5433:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jobagent"]
+      test: ['CMD-SHELL', 'pg_isready -U jobagent']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,9 +20,9 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6380:6379"
+      - '6380:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,7 +32,7 @@ services:
       context: .
       dockerfile: services/api/Dockerfile
     ports:
-      - "3003:3000"
+      - '3003:3000'
     environment:
       DATABASE_URL: postgresql://jobagent:jobagent@postgres:5432/jobagent
       REDIS_URL: redis://redis:6379

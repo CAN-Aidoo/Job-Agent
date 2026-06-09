@@ -9,7 +9,7 @@ import { JobAgent } from '@jobagent/shared/src/interfaces/agent';
  */
 export async function loadAgents(): Promise<void> {
   const agentsDir = path.resolve(__dirname);
-  const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.agent.ts') || f.endsWith('.agent.js'));
+  const files = fs.readdirSync(agentsDir).filter((f) => f.endsWith('.agent.ts') || f.endsWith('.agent.js'));
 
   for (const file of files) {
     const modulePath = path.join(agentsDir, file);

@@ -28,7 +28,7 @@ export async function watchdogCheck(): Promise<{ recovered: number; orphaned: nu
 
       await pool.query(
         `INSERT INTO activity_log (user_id, draft_id, event_type, details) VALUES ($1, NULL, 'retry_attempted', $2)`,
-        [run.user_id, JSON.stringify({ run_id: run.id, phase: run.phase, step: run.current_step })]
+        [run.user_id, JSON.stringify({ run_id: run.id, phase: run.phase, step: run.current_step })],
       );
 
       console.log(`[watchdog] Recovered stuck run ${run.id} (phase: ${run.phase}, step: ${run.current_step})`);

@@ -1,5 +1,6 @@
 import { AgentInput, AgentOutput, JobAgent } from '@jobagent/shared/src/interfaces/agent';
-import { dbDrafts, dbPostings, dbProfiles } from '@jobagent/shared/src/index';
+import { dbDrafts, dbPostings } from '@jobagent/shared/src/index';
+import { JobPosting } from '@jobagent/shared/src/interfaces/job';
 import { generateResumeVariant } from './resume-selector'; // Placeholder for variant selection logic
 import { generateCoverLetter } from './cover-letter-gen'; // Placeholder
 import { answerScreeningQuestions } from './screening-gen'; // Placeholder
@@ -18,12 +19,13 @@ export default class DraftingAgent implements JobAgent {
         const draft = await dbDrafts.findById(draftId);
         if (!draft) throw new Error(`Draft ${draftId} not found`);
 
-        const posting = await dbPostings.findById(draft.posting_id);
-        if (!posting) throw new Error(`Posting for draft ${draftId} not found`);
+        const postingRow = await dbPostings.findById(draft.posting_id);
+        if (!postingRow) throw new Error(`Posting for draft ${draftId} not found`);
+        const posting = postingRow.data as unknown as JobPosting;
 
         // 1. Resume selection
         const variantId = await generateResumeVariant(draft, posting);
-        
+
         // 2. Cover Letter
         const coverLetter = await generateCoverLetter(draft, posting);
 
@@ -35,10 +37,10 @@ export default class DraftingAgent implements JobAgent {
 
         // Update draft
         await dbDrafts.update(draftId, {
-            resume_variant_id: variantId,
-            cover_letter: coverLetter,
-            screening_answers: screeningAnswers,
-            status: qualityReport.passed ? 'pending_review' : 'manual_required'
+          resume_variant_id: variantId,
+          cover_letter: coverLetter,
+          screening_answers: screeningAnswers,
+          status: qualityReport.passed ? 'pending_review' : 'manual_required',
         });
 
         results.total_drafted++;

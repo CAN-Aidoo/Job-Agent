@@ -16,26 +16,32 @@ export default class DedupAgent implements JobAgent {
 
     // Logic: find duplicates based on canonical_key and pg_trgm similarity.
     // 1. Get postings for the current run
-    const { rows: postings } = await pool.query<{ 
-        id: string; 
-        canonical_key: string; 
-        apply_method: string; 
-    }>(`
+    const { rows: postings } = await pool.query<{
+      id: string;
+      canonical_key: string;
+      apply_method: string;
+    }>(
+      `
       SELECT id, canonical_key, data->>'apply_method' as apply_method
       FROM job_postings
       WHERE id = ANY($1)
-    `, [postingIds]);
+    `,
+      [postingIds],
+    );
 
     const startTime = Date.now();
-    const uniqueMap = new Map<string, typeof postings[0]>();
+    const uniqueMap = new Map<string, (typeof postings)[0]>();
 
     for (const posting of postings) {
       // Find potential duplicates using similarity on canonical_key
-      const { rows: potentialDuplicates } = await pool.query<{ id: string; apply_method: string }>(`
+      const { rows: potentialDuplicates } = await pool.query<{ id: string; apply_method: string }>(
+        `
         SELECT id, data->>'apply_method' as apply_method
         FROM job_postings
         WHERE id != $1 AND similarity(canonical_key, $2) > 0.92
-      `, [posting.id, posting.canonical_key]);
+      `,
+        [posting.id, posting.canonical_key],
+      );
 
       let isDuplicate = false;
       for (const dup of potentialDuplicates) {
@@ -43,15 +49,15 @@ export default class DedupAgent implements JobAgent {
         // Heuristic: Prefer API-based apply_method over others
         const currentIsExternal = posting.apply_method === 'external';
         const dupIsExternal = dup.apply_method === 'external';
-        
+
         if (!currentIsExternal && dupIsExternal) {
-            // Keep current, mark existing as duplicate
-            await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [posting.id, dup.id]);
+          // Keep current, mark existing as duplicate
+          await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [posting.id, dup.id]);
         } else {
-            // Mark current as duplicate
-            await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [dup.id, posting.id]);
-            isDuplicate = true;
-            break;
+          // Mark current as duplicate
+          await pool.query('UPDATE job_postings SET canonical_posting_id = $1 WHERE id = $2', [dup.id, posting.id]);
+          isDuplicate = true;
+          break;
         }
       }
 

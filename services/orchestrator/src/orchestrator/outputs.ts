@@ -16,7 +16,7 @@ export async function saveOutput(
   stepName: string,
   agentName: string,
   outputData: unknown,
-  metadata: AgentMetadata
+  metadata: AgentMetadata,
 ): Promise<StepOutput> {
   const pool = getPool();
   const { rows } = await pool.query<StepOutput>(
@@ -25,17 +25,17 @@ export async function saveOutput(
      ON CONFLICT (run_id, step_name) DO UPDATE SET
        output_data = $4, metadata = $5
      RETURNING *`,
-    [runId, stepName, agentName, JSON.stringify(outputData), JSON.stringify(metadata)]
+    [runId, stepName, agentName, JSON.stringify(outputData), JSON.stringify(metadata)],
   );
   return rows[0];
 }
 
 export async function getOutput(runId: string, stepName: string): Promise<StepOutput | null> {
   const pool = getPool();
-  const { rows } = await pool.query<StepOutput>(
-    'SELECT * FROM step_outputs WHERE run_id = $1 AND step_name = $2',
-    [runId, stepName]
-  );
+  const { rows } = await pool.query<StepOutput>('SELECT * FROM step_outputs WHERE run_id = $1 AND step_name = $2', [
+    runId,
+    stepName,
+  ]);
   return rows[0] || null;
 }
 
@@ -43,7 +43,7 @@ export async function getAllOutputs(runId: string): Promise<Map<string, AgentOut
   const pool = getPool();
   const { rows } = await pool.query<StepOutput>(
     'SELECT * FROM step_outputs WHERE run_id = $1 ORDER BY created_at ASC',
-    [runId]
+    [runId],
   );
 
   const map = new Map<string, AgentOutput>();

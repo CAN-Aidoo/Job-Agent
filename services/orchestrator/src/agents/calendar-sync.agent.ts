@@ -23,12 +23,15 @@ export default class CalendarSyncAgent implements JobAgent {
 
     // Find inbox events classified as interview_invite that don't have calendar events
     const { rows: interviews } = await pool.query<{
-      id: string; parsed_data: Record<string, unknown>; raw_subject: string;
-    }>(`SELECT ie.id, ie.parsed_data, ie.raw_subject
+      id: string;
+      parsed_data: Record<string, unknown>;
+      raw_subject: string;
+    }>(
+      `SELECT ie.id, ie.parsed_data, ie.raw_subject
         FROM inbox_events ie
         LEFT JOIN calendar_events ce ON ce.inbox_event_id = ie.id
         WHERE ie.user_id = $1 AND ie.classified_as = 'interview_invite' AND ce.id IS NULL`,
-      [input.userId]
+      [input.userId],
     );
 
     let eventsCreated = 0;
@@ -60,15 +63,12 @@ export default class CalendarSyncAgent implements JobAgent {
         input.userId,
         `Interview: ${company} — ${role}`,
         scheduledAt,
-        description
+        description,
       );
 
       if (eventId) {
         // Update calendar event with prep notes
-        await pool.query(
-          'UPDATE calendar_events SET prep_notes = $1 WHERE google_event_id = $2',
-          [prepNotes, eventId]
-        );
+        await pool.query('UPDATE calendar_events SET prep_notes = $1 WHERE google_event_id = $2', [prepNotes, eventId]);
         eventsCreated++;
       }
     }
@@ -84,14 +84,19 @@ export default class CalendarSyncAgent implements JobAgent {
     const model = this.getModel();
 
     // Get posting info if available
-    const { rows: [draftRow] } = await pool.query<{ data: Record<string, unknown> }>(`
+    const {
+      rows: [draftRow],
+    } = await pool.query<{ data: Record<string, unknown> }>(
+      `
       SELECT jp.data FROM application_drafts ad
       JOIN job_postings jp ON jp.id = ad.posting_id
       WHERE ad.user_id = $1 AND jp.company ILIKE $2
       LIMIT 1
-    `, [userId, `%${company}%`]);
+    `,
+      [userId, `%${company}%`],
+    );
 
-    const jobDescription = draftRow ? ((draftRow.data as Record<string, unknown>).description_md as string || '') : '';
+    const jobDescription = draftRow ? ((draftRow.data as Record<string, unknown>).description_md as string) || '' : '';
 
     const result = await model.generateContent(`Generate interview prep notes for:
 Company: ${company}

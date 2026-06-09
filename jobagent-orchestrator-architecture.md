@@ -184,7 +184,8 @@ async function processRun(runId: string): Promise<void> {
 
     // Skip if already done (idempotency)
     const existing = await db.stepOutputs.findOne({
-      runId, stepName: nextStep.name,
+      runId,
+      stepName: nextStep.name,
     });
     if (existing) {
       await db.runs.update(runId, {
@@ -231,11 +232,10 @@ Crash recovery, multi-instance deployment, distributed locks — identical to Mi
 # pipeline.yaml — JobAgent
 
 phases:
-
   # ── Phase A: Nightly Discovery (cron-triggered) ──
   nightly:
     trigger: cron
-    schedule: "0 2 * * *"   # 2 AM daily
+    schedule: '0 2 * * *' # 2 AM daily
     steps:
       - name: discovery
         agent: DiscoveryAgent
@@ -293,11 +293,11 @@ phases:
   # ── Phase B: Morning Delivery (cron-triggered) ──
   morning:
     trigger: cron
-    schedule: "0 7 * * *"   # 7 AM daily
+    schedule: '0 7 * * *' # 7 AM daily
     steps:
       - name: deliver
         agent: DeliveryAgent
-        hitl: true            # ← The HITL gate. Waits for user approval.
+        hitl: true # ← The HITL gate. Waits for user approval.
 
   # ── Phase C: Submission (event-triggered, per draft) ──
   submission:
@@ -319,7 +319,7 @@ phases:
             workday: playwright
             custom: playwright
             unknown: manual_handoff
-          playwright_timing: human_paced   # 800-2200ms per action
+          playwright_timing: human_paced # 800-2200ms per action
           max_retries: 2
 
       - name: confirm
@@ -359,6 +359,7 @@ global:
 - **Indeed** — same caution as LinkedIn.
 
 Output: array of normalized `JobPosting` records:
+
 ```typescript
 interface JobPosting {
   source: string;
@@ -405,11 +406,11 @@ interface Profile {
   email: string;
   phone: string;
   location: { city: string; country: string; timezone: string };
-  work_authorization: string[];   // e.g., ['US_citizen', 'EU_eligible']
+  work_authorization: string[]; // e.g., ['US_citizen', 'EU_eligible']
 
-  target_roles: string[];          // e.g., ['Senior Backend Engineer', 'Tech Lead']
-  excluded_roles: string[];        // e.g., ['Manager', 'PM']
-  stack: string[];                 // e.g., ['TypeScript', 'Postgres', 'Kubernetes']
+  target_roles: string[]; // e.g., ['Senior Backend Engineer', 'Tech Lead']
+  excluded_roles: string[]; // e.g., ['Manager', 'PM']
+  stack: string[]; // e.g., ['TypeScript', 'Postgres', 'Kubernetes']
   seniority: 'junior' | 'mid' | 'senior' | 'staff' | 'principal';
 
   comp_band: { min: number; preferred: number; currency: string };
@@ -419,11 +420,11 @@ interface Profile {
     timezone_overlap_hours: number;
   };
 
-  excluded_companies: string[];    // e.g., past employers, ethical exclusions
-  excluded_industries: string[];   // e.g., ['gambling', 'adtech', 'defense']
+  excluded_companies: string[]; // e.g., past employers, ethical exclusions
+  excluded_industries: string[]; // e.g., ['gambling', 'adtech', 'defense']
 
-  resume_variants: ResumeVariant[];   // pool of pre-tailored resumes
-  cover_letter_voice_sample: string;  // 200 words of user's actual writing
+  resume_variants: ResumeVariant[]; // pool of pre-tailored resumes
+  cover_letter_voice_sample: string; // 200 words of user's actual writing
 
   links: {
     linkedin?: string;
@@ -433,7 +434,7 @@ interface Profile {
 }
 ```
 
-Scoring uses the weights from `pipeline.yaml`. Output a 0–1 score plus a per-criterion breakdown so the user can see *why* something matched.
+Scoring uses the weights from `pipeline.yaml`. Output a 0–1 score plus a per-criterion breakdown so the user can see _why_ something matched.
 
 ### 6.5 DraftingAgent
 
@@ -443,7 +444,7 @@ Generates submission materials per matched job:
 2. **Cover letter** — generates in the user's voice using `cover_letter_voice_sample` as the style anchor. Pulls 2–3 specifics from the job description so it doesn't read generic. ~250 words.
 3. **Screening question pre-fills** — answers to common ATS questions (work authorization, salary expectations, notice period, willingness to relocate) based on Profile. The user reviews these in the digest.
 
-Outputs are *drafts*, not submissions. Stored with `status = 'pending_review'`.
+Outputs are _drafts_, not submissions. Stored with `status = 'pending_review'`.
 
 ### 6.6 DigestBuilder + DeliveryAgent
 
@@ -472,6 +473,7 @@ Submits an approved draft. Strategy is determined by `apply_method` from the ori
 Persistent loop. Watches a dedicated Gmail address (`jobs@yourdomain` recommended — keeps personal inbox clean). Uses the Gmail Push API (Pub/Sub) for low-latency notification.
 
 For each incoming email, runs an LLM classifier:
+
 - `interview_invite` → extract date/time/interviewer/format → trigger CalendarSyncAgent
 - `rejection` → update application status, log reason if given
 - `recruiter_outreach` → flag for user review
@@ -483,6 +485,7 @@ For each incoming email, runs an LLM classifier:
 ### 6.9 CalendarSyncAgent
 
 Triggered when InboxWatcher detects an interview invite. Creates a Google Calendar event with:
+
 - Title: `Interview: {Company} — {Role}`
 - Time: parsed from email
 - Attendees: interviewer if extractable
@@ -593,21 +596,21 @@ CREATE TABLE calendar_events (
 
 Same philosophy as Mining: sequential phases, each unlocking the next. Solo builder estimate.
 
-| Phase | What to Build | Duration |
-|---|---|---|
-| 1 | DB schema + Profile CRUD + Redis locks + BullMQ setup | 1 week |
-| 2 | Agent interface + registry + pipeline.yaml loader (port from Mining) | 3 days |
-| 3 | DiscoveryAgent with one source (Greenhouse) + DedupAgent | 1 week |
-| 4 | MatchingAgent + AuthenticityVerifier | 1 week |
-| 5 | DraftingAgent (cover letter + variant selection) | 1.5 weeks |
-| 6 | DigestBuilder + DeliveryAgent + morning push notification | 4 days |
-| 7 | Approval API + edit-in-place UI + HITL Gateway | 1 week |
-| 8 | SubmissionAgent — Greenhouse/Lever/Ashby APIs only | 1.5 weeks |
-| 9 | InboxWatcher + Gmail Push API + email classifier | 1 week |
-| 10 | CalendarSyncAgent + Google Calendar integration | 4 days |
-| 11 | Add more discovery sources (Lever, Ashby, Workable, Adzuna) | 1 week |
-| 12 | Playwright submission for Workday + custom portals | 2 weeks |
-| 13 | Stuck-run watchdog + retry logic + observability | 1 week |
+| Phase | What to Build                                                        | Duration  |
+| ----- | -------------------------------------------------------------------- | --------- |
+| 1     | DB schema + Profile CRUD + Redis locks + BullMQ setup                | 1 week    |
+| 2     | Agent interface + registry + pipeline.yaml loader (port from Mining) | 3 days    |
+| 3     | DiscoveryAgent with one source (Greenhouse) + DedupAgent             | 1 week    |
+| 4     | MatchingAgent + AuthenticityVerifier                                 | 1 week    |
+| 5     | DraftingAgent (cover letter + variant selection)                     | 1.5 weeks |
+| 6     | DigestBuilder + DeliveryAgent + morning push notification            | 4 days    |
+| 7     | Approval API + edit-in-place UI + HITL Gateway                       | 1 week    |
+| 8     | SubmissionAgent — Greenhouse/Lever/Ashby APIs only                   | 1.5 weeks |
+| 9     | InboxWatcher + Gmail Push API + email classifier                     | 1 week    |
+| 10    | CalendarSyncAgent + Google Calendar integration                      | 4 days    |
+| 11    | Add more discovery sources (Lever, Ashby, Workable, Adzuna)          | 1 week    |
+| 12    | Playwright submission for Workday + custom portals                   | 2 weeks   |
+| 13    | Stuck-run watchdog + retry logic + observability                     | 1 week    |
 
 **Total: ~12 weeks solo. Working v1 (phases 1–10) at ~8 weeks.**
 
@@ -634,7 +637,7 @@ The first deployable cut is phases 1–7: discovery + matching + drafting + morn
 The brief asked for the agent to "apply with excellence as if I applied it." That goal is achievable — without the deception. Excellence in this system means:
 
 - The morning digest contains 5–10 well-matched jobs the user wouldn't have found alone.
-- Each draft is *better* than what the user would write at 11 PM tired — because the agent has time to research the company, parse the JD carefully, and match it against the resume in detail.
+- Each draft is _better_ than what the user would write at 11 PM tired — because the agent has time to research the company, parse the JD carefully, and match it against the resume in detail.
 - Approval takes ~30 seconds per draft on a phone.
 - Rejections feed back into MatchingAgent's weights so tomorrow's matches are better.
 - Interviews land on the calendar automatically with prep notes already attached.
@@ -644,4 +647,4 @@ That's the actual win. Volume goes up 5–10x, quality goes up, and nothing burn
 
 ---
 
-*JobAgent — Stateless orchestrator, plugin agents, HITL by default, no shortcuts that backfire.*
+_JobAgent — Stateless orchestrator, plugin agents, HITL by default, no shortcuts that backfire._

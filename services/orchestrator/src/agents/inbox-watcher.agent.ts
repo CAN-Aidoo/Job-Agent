@@ -20,22 +20,22 @@ export default class InboxWatcherAgent implements JobAgent {
 
     for (const msg of messages) {
       if (!msg.id) continue;
-      
+
       // 2. Fetch full message
       const fullMsg = await gmail.users.messages.get({ userId: 'me', id: msg.id, format: 'full' });
-      const subject = fullMsg.data.payload?.headers?.find(h => h.name === 'Subject')?.value || '';
+      const subject = fullMsg.data.payload?.headers?.find((h) => h.name === 'Subject')?.value || '';
       const body = fullMsg.data.snippet || '';
-      
+
       // 3. Classify
       const classification = await classifyEmail(subject, body);
-      
+
       // 4. Create inbox event record
       await dbInbox.create({
         user_id: userId,
         email_id: msg.id,
         received_at: new Date(),
         raw_subject: subject,
-        classified_as: classification
+        classified_as: classification,
       });
       processedIds.push(msg.id);
     }

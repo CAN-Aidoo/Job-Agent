@@ -33,16 +33,19 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
   const { rows: pending } = await pool.query(
     `SELECT COUNT(*) as count FROM application_drafts WHERE user_id = $1 AND status IN ('pending_review', 'awaiting_approval')`,
-    [userId]
+    [userId],
   );
   const { rows: recent } = await pool.query(
     `SELECT event_type, details, created_at FROM activity_log WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10`,
-    [userId]
+    [userId],
   );
 
-  const activityHtml = recent.map((e: any) =>
-    `<div class="card"><strong>${e.event_type}</strong> <span style="color:#666; font-size:12px;">${new Date(e.created_at).toLocaleString()}</span></div>`
-  ).join('');
+  const activityHtml = recent
+    .map(
+      (e: { event_type: string; created_at: string | number | Date }) =>
+        `<div class="card"><strong>${e.event_type}</strong> <span style="color:#666; font-size:12px;">${new Date(e.created_at).toLocaleString()}</span></div>`,
+    )
+    .join('');
 
   res.send(`<!DOCTYPE html><html><head><title>JobAgent Dashboard</title>${STYLE}</head><body>
     ${NAV}
@@ -60,23 +63,29 @@ router.get('/drafts', async (req: AuthRequest, res: Response) => {
 
   let html = '';
   for (const draft of drafts) {
-    const { rows: [posting] } = await pool.query<{ company: string; role_title: string }>(
+    const {
+      rows: [posting],
+    } = await pool.query<{ company: string; role_title: string }>(
       'SELECT company, role_title FROM job_postings WHERE id = $1',
-      [draft.posting_id]
+      [draft.posting_id],
     );
     html += `<div class="card">
       <span class="score">${Math.round(draft.match_score * 100)}%</span>
       <strong>${posting?.role_title || 'Unknown'}</strong> at ${posting?.company || 'Unknown'}
       <br/><span class="status status-${draft.status}">${draft.status}</span>
       <br/><a href="/ui/drafts/${draft.id}" class="btn btn-edit">View</a>
-      ${draft.status === 'awaiting_approval' ? `
+      ${
+        draft.status === 'awaiting_approval'
+          ? `
         <form method="POST" action="/drafts/${draft.id}/approve" style="display:inline;">
           <button class="btn btn-approve" type="submit">Approve</button>
         </form>
         <form method="POST" action="/drafts/${draft.id}/reject" style="display:inline;">
           <button class="btn btn-reject" type="submit">Reject</button>
         </form>
-      ` : ''}
+      `
+          : ''
+      }
     </div>`;
   }
 
@@ -96,12 +105,14 @@ router.get('/drafts/:id', async (req: AuthRequest, res: Response) => {
   }
 
   const pool = getPool();
-  const { rows: [posting] } = await pool.query<{ company: string; role_title: string; data: Record<string, unknown> }>(
+  const {
+    rows: [posting],
+  } = await pool.query<{ company: string; role_title: string; data: Record<string, unknown> }>(
     'SELECT company, role_title, data FROM job_postings WHERE id = $1',
-    [draft.posting_id]
+    [draft.posting_id],
   );
 
-  const jobData = posting?.data as Record<string, unknown> || {};
+  const jobData = (posting?.data as Record<string, unknown>) || {};
   const description = (jobData.description_md as string) || 'No description';
 
   res.send(`<!DOCTYPE html><html><head><title>Draft: ${posting?.role_title}</title>${STYLE}</head><body>

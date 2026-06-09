@@ -4,7 +4,7 @@ import { Profile } from '@jobagent/shared/src/interfaces/profile';
 import companies from './ashby-companies.json';
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export default class AshbySource implements JobSource {
@@ -21,11 +21,11 @@ export default class AshbySource implements JobSource {
         const url = `${this.baseUrl}/${company}`;
         const response = await fetch(url, {
           method: 'GET',
-          headers: { 'Accept': 'application/json' },
+          headers: { Accept: 'application/json' },
         });
         if (!response.ok) continue;
 
-        const data = await response.json() as { jobs?: RawPosting[] };
+        const data = (await response.json()) as { jobs?: RawPosting[] };
         if (data.jobs) {
           for (const job of data.jobs) {
             (job as Record<string, unknown>)._company_name = company;
@@ -40,16 +40,16 @@ export default class AshbySource implements JobSource {
       await sleep(150);
     }
 
-    const keywords = profile.target_roles.map(r => r.toLowerCase());
-    return allJobs.filter(job => {
-      const title = ((job as Record<string, unknown>).title as string || '').toLowerCase();
-      return keywords.some(k => title.includes(k.split(' ').pop()!));
+    const keywords = profile.target_roles.map((r) => r.toLowerCase());
+    return allJobs.filter((job) => {
+      const title = (((job as Record<string, unknown>).title as string) || '').toLowerCase();
+      return keywords.some((k) => title.includes(k.split(' ').pop()!));
     });
   }
 
   normalizePosting(raw: RawPosting): JobPosting {
     const r = raw as Record<string, unknown>;
-    const company = r._company_name as string || '';
+    const company = (r._company_name as string) || '';
     const location = (r.location as string) || (r.locationName as string) || 'Unknown';
 
     return {
@@ -77,6 +77,9 @@ export default class AshbySource implements JobSource {
   }
 
   private htmlToMd(html: string): string {
-    return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return html
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 }

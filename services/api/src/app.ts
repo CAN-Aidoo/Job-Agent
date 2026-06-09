@@ -43,12 +43,17 @@ app.get('/health', async (_req, res) => {
     const [dbCheck, redisCheck, stuckCheck] = await Promise.allSettled([
       pool.query('SELECT 1'),
       redis.ping(),
-      pool.query(`SELECT COUNT(*)::int as count FROM runs WHERE state = 'agent_running' AND started_at < now() - interval '1 hour'`),
+      pool.query(
+        `SELECT COUNT(*)::int as count FROM runs WHERE state = 'agent_running' AND started_at < now() - interval '1 hour'`,
+      ),
     ]);
 
     const dbOk = dbCheck.status === 'fulfilled';
     const redisOk = redisCheck.status === 'fulfilled';
-    const stuckCount = stuckCheck.status === 'fulfilled' ? (stuckCheck.value as any).rows[0]?.count || 0 : -1;
+    const stuckCount =
+      stuckCheck.status === 'fulfilled'
+        ? (stuckCheck.value as unknown as { rows: { count: number }[] }).rows[0]?.count || 0
+        : -1;
 
     const overall = dbOk && redisOk;
     res.status(overall ? 200 : 503).json({

@@ -1,5 +1,6 @@
 import { AgentInput, AgentOutput, JobAgent } from '@jobagent/shared/src/interfaces/agent';
 import { dbDrafts, dbPostings, dbProfiles } from '@jobagent/shared/src/index';
+import { JobPosting } from '@jobagent/shared/src/interfaces/job';
 import { SubmissionStrategy } from '../submission/strategy';
 import { GreenhouseSubmitter } from '../submission/greenhouse.submitter';
 import { LeverSubmitter } from '../submission/lever.submitter';
@@ -25,14 +26,15 @@ export default class SubmissionAgent implements JobAgent {
     const posting = await dbPostings.findById(draft.posting_id);
     if (!posting) throw new Error(`Posting for draft ${draftId} not found`);
 
-    const profile = await dbProfiles.findByUserId(draft.user_id);
-    if (!profile) throw new Error(`Profile for user ${draft.user_id} not found`);
+    const profileRow = await dbProfiles.findByUserId(draft.user_id);
+    if (!profileRow) throw new Error(`Profile for user ${draft.user_id} not found`);
+    const profile = profileRow.data;
 
-    // Cast data as any to access properties
-    const postingData = posting.data as any;
-    const strategy = this.strategies[postingData.apply_method as string] || this.strategies['external'];
-    
-    const result = await strategy.execute(draft, posting, profile);
+    // Cast data properly as JobPosting
+    const postingData = posting.data as unknown as JobPosting;
+    const strategy = this.strategies[postingData.apply_method] || this.strategies['external'];
+
+    const result = await strategy.execute(draft, postingData, profile);
 
     if (result.success) {
       await dbDrafts.update(draftId, { status: 'submitted', submission_receipt: result.receipt });

@@ -15,7 +15,7 @@ export async function setupScheduledJobs(): Promise<void> {
     {
       name: 'nightly-discovery',
       data: { trigger: 'scheduled' },
-    }
+    },
   );
   console.log('[scheduler] Nightly discovery scheduled at 0 2 * * * UTC');
 
@@ -28,7 +28,7 @@ export async function setupScheduledJobs(): Promise<void> {
     {
       name: 'morning-delivery',
       data: { trigger: 'scheduled' },
-    }
+    },
   );
   console.log('[scheduler] Morning delivery scheduled at 0 7 * * * UTC');
 }

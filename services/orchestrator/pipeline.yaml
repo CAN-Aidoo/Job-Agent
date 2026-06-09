@@ -1,9 +1,8 @@
 phases:
-
   # Phase A: Nightly Discovery (cron-triggered)
   nightly:
     trigger: cron
-    schedule: "0 2 * * *"
+    schedule: '0 2 * * *'
     steps:
       - name: discovery
         agent: DiscoveryAgent
@@ -61,7 +60,7 @@ phases:
   # Phase B: Morning Delivery (cron-triggered)
   morning:
     trigger: cron
-    schedule: "0 7 * * *"
+    schedule: '0 7 * * *'
     steps:
       - name: deliver
         agent: DeliveryAgent

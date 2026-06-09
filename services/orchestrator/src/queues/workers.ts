@@ -10,7 +10,7 @@ export const nightlyWorker = new Worker(
     console.log(`[nightly-discovery] Processing job ${job.id}:`, job.data);
     // Placeholder — real handler will call orchestrator core
   },
-  { connection }
+  { connection },
 );
 
 export const morningWorker = new Worker(
@@ -19,7 +19,7 @@ export const morningWorker = new Worker(
     console.log(`[morning-delivery] Processing job ${job.id}:`, job.data);
     // Placeholder — real handler will call orchestrator core
   },
-  { connection }
+  { connection },
 );
 
 export const submissionWorker = new Worker(
@@ -28,7 +28,7 @@ export const submissionWorker = new Worker(
     console.log(`[submission-processor] Processing job ${job.id}:`, job.data);
     // Placeholder — real handler will call orchestrator core
   },
-  { connection }
+  { connection },
 );
 
 nightlyWorker.on('completed', (job) => console.log(`[nightly-discovery] Job ${job.id} completed`));

@@ -39,10 +39,7 @@ router.get('/gmail', authMiddleware, (req: AuthRequest, res: Response) => {
   const oauth2Client = getOAuth2Client();
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: [
-      'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/calendar',
-    ],
+    scope: ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/calendar'],
     state: req.user!.userId,
   });
   res.redirect(url);
@@ -64,12 +61,15 @@ router.get('/gmail/callback', async (req: Request, res: Response) => {
   const encryptedAccess = tokens.access_token ? encrypt(tokens.access_token) : null;
   const encryptedRefresh = tokens.refresh_token ? encrypt(tokens.refresh_token) : null;
 
-  await pool.query(`
+  await pool.query(
+    `
     INSERT INTO user_tokens (user_id, provider, access_token, refresh_token, expires_at)
     VALUES ($1, 'google', $2, $3, $4)
     ON CONFLICT (user_id, provider) DO UPDATE SET
       access_token = $2, refresh_token = COALESCE($3, user_tokens.refresh_token), expires_at = $4
-  `, [userId, encryptedAccess, encryptedRefresh, tokens.expiry_date ? new Date(tokens.expiry_date) : null]);
+  `,
+    [userId, encryptedAccess, encryptedRefresh, tokens.expiry_date ? new Date(tokens.expiry_date) : null],
+  );
 
   res.send('<h1>Gmail connected! You can close this window.</h1>');
 });
